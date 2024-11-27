@@ -25,9 +25,24 @@ tokenizer:
   max_seq_len: null
 
 # Dataset
+# dataset:
+#   _component_: torchtune.datasets.text_completion_dataset
+#   source: allenai/c4
+#   # max_seq_len: 8192
+#   column: text
+#   name: en
+#   # split: train
+#   split: train[:1%]
+#   # packed: False  # True increases speed
+
 dataset:
-  _component_: torchtune.datasets.alpaca_dataset
-  packed: False  # True increases speed
+  _component_: torchtune.datasets.chat_dataset
+  source: json
+  data_files: int8/data/my_data.json
+  split: train
+  conversation_column: dialogue
+  conversation_style: sharegpt
+
 seed: null
 shuffle: True
 
@@ -45,9 +60,10 @@ checkpointer:
     model-00004-of-00004.safetensors
   ]
   recipe_checkpoint: null
-  output_dir: /tmp/Meta-Llama-3.1-8B-Instruct/
+  output_dir: /tmp/Meta-Llama-3.1-8B-Instruct-t/
   model_type: LLAMA3
 resume_from_checkpoint: False
+safe_serialization: True
 
 # Fine-tuning arguments
 batch_size: 2
@@ -59,22 +75,33 @@ quantizer:
   groupsize: 256
 
 optimizer:
-  _component_: torch.optim.AdamW
+  # _component_: torch.optim.AdamW
+  # fused: True
+  # high speed
+  _component_: torchao.prototype.low_bit_optim.AdamW8bit
+  # # high mem saving
+  # _component_: bitsandbytes.optim.PagedAdamW8bit
+  # _component_: torchao.prototype.low_bit_optim.CPUOffloadOptimizer
+  # offload_gradients: True
   lr: 2e-5
-  fused: True
 loss:
   _component_: torchtune.modules.loss.CEWithChunkedOutputLoss
-max_steps_per_epoch: null
+# max_steps_per_epoch: null
 compile: False  # pytorch compile, set to true for better perf/memory
 optimizer_in_bwd: False  # True saves memory. Requires gradient_accumulation_steps=1
 gradient_accumulation_steps: 1  # Use to increase virtual batch size
+
+# opt
+max_steps_per_epoch: 2000
+fake_quant_after_n_steps: 1000
+memory_efficient_fsdp_wrap: False
 
 # Training env
 device: cuda
 
 # Memory management
 enable_activation_checkpointing: True  # True reduces memory
-enable_activation_offloading: False  # True reduces memory
+enable_activation_offloading: True  # True reduces memory
 custom_sharded_layers: ['tok_embeddings', 'output']  # Layers to shard separately (useful for large vocab size models). Lower Memory, but lower speed.
 
 # Reduced precision
