@@ -1,4 +1,4 @@
-tune run --nproc_per_node 1 full_finetune_distributed --config int8/config/llama31_qat_int8_config.yaml
+HF_HOME=/maindata/data/shared/ai_story_workspace-dsw/jun.zhangg/models/.cache/huggingface tune run --nproc_per_node 1 qat_distributed --config config/llama31_qat_int8_config.yaml
 
 # tune run lora_finetune_single_device --config llama3_1/8B_lora_single_device
 
